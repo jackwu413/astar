@@ -1,3 +1,5 @@
+import os
+from os import listdir
 
 def promptUser():
     #Prompt user for maze number 
@@ -22,14 +24,33 @@ def promptUser():
 
 #Take in maze number and return 2D array
 def loadMaze(mazeNum):
-    print("maze number: " + str(mazeNum) + "\n")
-    return[[1,2,3],[4,5,6]]
+    
+    array = []
+    
+    for f in listdir("mazes"):
+        if f == "maze" + str(mazeNum) + ".txt":
+            file = open(os.getcwd() + "/mazes/" + f)
+            temp = file.read().splitlines()
+            for item in temp: 
+                array.append(item)
+
+    return array
 
 
 def execute(array, algo):
-    print("Maze:\n")
-    print(array)
-    print("Algo: " + str(algo))
+    print('\n')
+    if algo == 'f':
+        print("Executing Repeated Forward A*")
+    elif algo == 'b':
+        print("Executing Repeated Backward A*")
+    else: 
+        print("Executing Adaptive A*")
+
+    print("Maze:" + '\n' + "----------")
+    for line in array:
+        print(line)
+    print("----------")
+    
 
 
 
