@@ -1,5 +1,21 @@
 import os
+import sys
 from os import listdir
+
+class Node:
+    def __init__(self, x, y, blocked):
+        self.x = x
+        self.y = y
+        self.g = 0
+        self.h = 0
+        self.f = 0
+        self.parent = None
+        self.blocked = blocked
+        self.visited = False 
+        
+
+
+    
 
 def promptUser():
     #Prompt user for maze number 
@@ -27,18 +43,40 @@ def loadMaze(mazeNum):
     
     array = []
     
+
     for f in listdir("mazes"):
         if f == "maze" + str(mazeNum) + ".txt":
             file = open(os.getcwd() + "/mazes/" + f)
+            
             temp = file.read().splitlines()
-            for item in temp: 
-                array.append(item)
-
+            i = 0
+            for item in temp:
+                subArray = []
+                j = 0 
+                for index in item:
+                    if index == 'X':
+                        subArray.append(Node(i,j,True))
+                    else:
+                        subArray.append(Node(i,j,False))
+                    j += 1
+                array.append(subArray)
+                i += 1
     return array
 
 
 def execute(array, algo):
     print('\n')
+    #Preconceived start and goal nodes 
+    startx = 4
+    starty = 2
+    goalx = 4
+    goaly = 4
+
+    print(array[0][0].x)
+    print(array[0][0].y)
+    print(array[0][0].blocked)
+
+
     if algo == 'f':
         print("Executing Repeated Forward A*")
     elif algo == 'b':
@@ -48,7 +86,16 @@ def execute(array, algo):
 
     print("Maze:" + '\n' + "----------")
     for line in array:
-        print(line)
+        for item in line:
+            if(item.x == 0 and item.y == 0):
+                sys.stdout.write('S')
+            elif(item.x == 4 and item.y == 4):
+                sys.stdout.write('E')
+            elif(item.blocked):
+                sys.stdout.write('X')
+            else:
+                sys.stdout.write(' ')
+        sys.stdout.write('\n')
     print("----------")
     
 
