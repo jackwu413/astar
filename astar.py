@@ -15,6 +15,7 @@ class Node:
         self.parent = None
         self.blocked = blocked
         self.visited = False 
+        self.onPath = False
 
     def __lt__(self, other): 
         return self.f < other.f
@@ -72,59 +73,80 @@ def execute(array, algo):
     if algo == 'f':
         print("Executing Repeated Forward A*")
 
-        openlist = []
-        closelist = []
+        openList = []
+        closeList = []
         goal = array[len(array)-1][len(array[0])-1]
 
         #Calculate and set h-value for starting point
-        array[4][2].g = 0
-        array[4][2].h = manDis(array[4][2].x,array[4][2].y,goal.x,goal.y)
-        array[4][2].f = array[4][2].g + array[4][2].h
-        curr = array[4][2]
-        heapq.heappush(openlist,curr)
+        array[0][0].g = 0
+        array[0][0].h = manDis(array[0][0].x,array[0][0].y,goal.x,goal.y)
+        array[0][0].f = array[0][0].g + array[0][0].h
+        curr = array[0][0]
+        # array[4][2].g = 0
+        # array[4][2].h = manDis(array[4][2].x,array[4][2].y,goal.x,goal.y)
+        # array[4][2].f = array[4][2].g + array[4][2].h
+        # curr = array[4][2]
+        heapq.heappush(openList,curr)
+        #expandedCells = 1
         while(curr != goal):
             neighbors = getNeighbors(curr,array)
             for node in neighbors:
-                if (node not in openlist and node not in closelist and node.blocked == False):
-                    heapq.heappush(openlist,node)
-                    heapq.heapify(openlist)
+                if (node not in openList and node not in closeList and node.blocked == False):
+                    #expandedCells += 1
+                    heapq.heappush(openList,node)
+                    heapq.heapify(openList)
                     node.g = curr.g + 1
                     node.h = manDis(curr.x,curr.y,goal.x,goal.y)
                     f = node.g + node.h
                     if (f < node.f):
                         node.f = f
                         node.parent = curr
-            closelist.append(curr)
-            curr = heapq.heappop(openlist)
-        print("Finished Forward")
-        printPath(goal,array)
+            closeList.append(curr)
+
+            if(len(openList) != 0):
+                curr = heapq.heappop(openList)
+            else: 
+                print("Path does not exist.")
+                return
+        #print("Expanded Cells: " + str(expandedCells) + '\n')
+        listPath(goal,array)
+        printMaze(array)
 
     elif algo == 'b':
         print("Executing Repeated Backward A*")
     else: 
         print("Executing Adaptive A*")
+    
 
+#List coordinates taken
+def listPath(goal, array):
+    print("Path: \n")
+    print("***GOAL***")
+    while(goal.parent != None):
+        print('(' + str(goal.x) + ',' + str(goal.y) + ')')
+        array[goal.x][goal.y].onPath = True
+        goal = goal.parent
+    print('(' + str(goal.x) + ',' + str(goal.y) + ')')
+    print("***START***\n")
+
+
+#Print maze with path
+def printMaze(array):
     print("Maze:" + '\n' + "----------")
     for line in array:
         for item in line:
             if(item.x == 0 and item.y == 0):
                 sys.stdout.write('S')
-            elif(item.x == 4 and item.y == 4):
+            elif(item.x == len(array)-1 and item.y == len(array[0])-1):
                 sys.stdout.write('E')
             elif(item.blocked):
                 sys.stdout.write('X')
+            elif(item.onPath):
+                sys.stdout.write('.')
             else:
                 sys.stdout.write(' ')
         sys.stdout.write('\n')
     print("----------")
-    
-
-def printPath(goal, array):
-    while(goal.parent != None):
-        print('(' + str(goal.x) + ',' + str(goal.y) + ')')
-        goal = goal.parent
-    print('(' + str(goal.x) + ',' + str(goal.y) + ')')
-
 
 #Compute Manhattan Distance between 2 nodes
 def manDis(x1,y1,x2,y2):
@@ -179,80 +201,7 @@ def getNeighbors(curr, array):
         return neighbors
 
 
-
-
 promptUser()
-
-
-
-
-
-
-
-
-
-
-# import turtle
-# import random 
-
-# window = turtle.Screen()
-# window.bgcolor("white")
-# window.title("A*")
-# window.setup(1030,1030)
-
-# class Pen(turtle.Turtle):
-#     def __init__(self):
-#         turtle.Turtle.__init__(self)
-#         self.shape("square")
-#         self.color("black")
-#         self.penup()
-#         self.speed(0)
-
-# mazes = [""]
-
-# maze_1 = []
-
-# for i in range(103):
-#     if (i == 0 or i == 102):
-#         string = ""
-#         for j in range(103):
-#             string = string + "X"
-#         maze_1.append(string)
-#     else:
-#         string = ""
-#         string = string + "X"
-#         for k in range (101):
-#             temp = random.randint(1,100)
-#             if temp > 70:
-#                 string = string + "X"
-#             else:
-#                 string = string + " "
-#         string = string + "X"
-#         maze_1.append(string)
-
-# print('\n'.join(maze_1))
-# mazes.append(maze_1)
-
-
-# def setup_maze(maze):
-#     for y in range(len(maze)):
-#         for x in range(len(maze[y])):
-#             character = maze[y][x]
-#             screen_x = -510 + (x*10)
-#             screen_y = 510 - (y*10)
-
-#             if character == "X":
-#                 pen.goto(screen_x, screen_y)
-#                 pen.stamp()
-
-
-# pen = Pen()
-
-
-# setup_maze(mazes[1])
-
-# while True:
-#     pass
 
 
 
