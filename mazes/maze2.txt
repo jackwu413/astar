@@ -1,5 +1,5 @@
-SX  X
- X   
-   X 
-   X 
-XXXXE
+     
+  X  
+  XX 
+  XX 
+  SXE

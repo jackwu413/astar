@@ -14,8 +14,6 @@ class Node:
         self.f = float("inf")
         self.parent = None
         self.blocked = blocked
-        self.visited = False 
-        self.onPath = False
 
     def __lt__(self, other): 
         return self.f < other.f
@@ -75,48 +73,73 @@ def execute(array, algo):
 
         openList = []
         closeList = []
+
         goal = array[len(array)-1][len(array[0])-1]
-
-        #Calculate and set h-value for starting point
-        array[0][0].g = 0
-        array[0][0].h = manDis(array[0][0].x,array[0][0].y,goal.x,goal.y)
-        array[0][0].f = array[0][0].g + array[0][0].h
-        curr = array[0][0]
-        # array[4][2].g = 0
-        # array[4][2].h = manDis(array[4][2].x,array[4][2].y,goal.x,goal.y)
-        # array[4][2].f = array[4][2].g + array[4][2].h
-        # curr = array[4][2]
-        heapq.heappush(openList,curr)
-        #expandedCells = 1
+        curr = array[4][2]
         while(curr != goal):
-            neighbors = getNeighbors(curr,array)
-            for node in neighbors:
-                if (node not in openList and node not in closeList and node.blocked == False):
-                    #expandedCells += 1
-                    heapq.heappush(openList,node)
-                    heapq.heapify(openList)
-                    node.g = curr.g + 1
-                    node.h = manDis(curr.x,curr.y,goal.x,goal.y)
-                    f = node.g + node.h
-                    if (f < node.f):
-                        node.f = f
-                        node.parent = curr
+            computePath(curr, goal, array, openList, closeList)
+            return
             closeList.append(curr)
-
-            if(len(openList) != 0):
-                curr = heapq.heappop(openList)
-            else: 
-                print("Path does not exist.")
-                return
-        #print("Expanded Cells: " + str(expandedCells) + '\n')
-        listPath(goal,array)
-        printMaze(array)
+            curr = heapq.heappop(openList)
+            #printMaze(curr,array)
+        #End while
 
     elif algo == 'b':
         print("Executing Repeated Backward A*")
     else: 
         print("Executing Adaptive A*")
-    
+
+#Function that takes in "starting" point and computes best path to goal without regard for blocked cells 
+def computePath(curr, goal, array, openList, closeList):
+    privateOpenList = []
+    privateCloseList = []
+    curr.g = 0
+    curr.h = manDis(curr.x, curr.y, goal.x, goal.y)
+    curr.f = curr.g + curr.h
+    initialNeighbors = getNeighbors(curr, array)
+    for cell in initialNeighbors:
+        print("Checking: " + str(cell.x) + ',' + str(cell.y))
+        print("closeList: ")
+        printList(closeList)
+        if cell not in openList and cell not in closeList:
+            print("Entered If Statement")
+            if cell.blocked:
+                closeList.append(cell)
+                privateCloseList.append(cell)
+            else:
+                heapq.heappush(openList, cell)
+                heapq.heappush(privateOpenList, cell)
+        else: 
+            pass
+    return
+    print("pOL: " + str(len(privateOpenList)))
+    while(curr != goal):
+        neighbors = getNeighbors(curr, array)
+        for cell in neighbors:
+            if(cell not in privateCloseList and cell not in privateOpenList):
+                print("ENTERED ONCE")
+                if(cell.blocked):
+                    privateCloseList.append(cell)
+                else:
+                    heapq.heappush(privateOpenList, cell)
+                    cell.g = curr.g + 1
+                    cell.h = manDis(cell.x, cell.y, goal.x, goal.y)
+                    f = cell.g + cell.h 
+                    if(f < cell.f):
+                        cell.f = f
+                        cell.parent = curr
+        if(len(privateOpenList) != 0):
+            curr = heapq.heappop(privateOpenList)
+            print("Curr: " + '(' + str(curr.x) + ',' + str(curr.y) + ')') 
+        else: 
+            print("Path does not exist.")
+            break
+        #End if else 
+    #End while
+    listPath(goal,array)
+#End computePath
+
+
 
 #List coordinates taken
 def listPath(goal, array):
@@ -124,25 +147,29 @@ def listPath(goal, array):
     print("***GOAL***")
     while(goal.parent != None):
         print('(' + str(goal.x) + ',' + str(goal.y) + ')')
-        array[goal.x][goal.y].onPath = True
         goal = goal.parent
     print('(' + str(goal.x) + ',' + str(goal.y) + ')')
     print("***START***\n")
 
 
+
+def printList(nodelist):
+    for item in nodelist:
+        print('(' + str(item.x) + ',' + str(item.y) +')')
+
+
+
 #Print maze with path
-def printMaze(array):
+def printMaze(start,array):
     print("Maze:" + '\n' + "----------")
     for line in array:
         for item in line:
-            if(item.x == 0 and item.y == 0):
+            if(item.x == start.x and item.y == start.y):
                 sys.stdout.write('S')
             elif(item.x == len(array)-1 and item.y == len(array[0])-1):
                 sys.stdout.write('E')
             elif(item.blocked):
                 sys.stdout.write('X')
-            elif(item.onPath):
-                sys.stdout.write('.')
             else:
                 sys.stdout.write(' ')
         sys.stdout.write('\n')
