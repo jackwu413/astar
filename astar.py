@@ -14,6 +14,7 @@ class Node:
         self.f = float("inf")
         self.parent = None
         self.blocked = blocked
+        self.visited = False
 
     def __lt__(self, other): 
         return self.f < other.f
@@ -91,45 +92,45 @@ def execute(array, algo):
 
 #Function that takes in "starting" point and computes best path to goal without regard for blocked cells 
 def computePath(curr, goal, array, openList, closeList):
-    privateOpenList = []
-    privateCloseList = []
     curr.g = 0
     curr.h = manDis(curr.x, curr.y, goal.x, goal.y)
     curr.f = curr.g + curr.h
+    print("closeList size: " + str(len(closeList)))
+    #Mark initial neighbors as visited 
     initialNeighbors = getNeighbors(curr, array)
     for cell in initialNeighbors:
         print("Checking: " + str(cell.x) + ',' + str(cell.y))
-        print("closeList: ")
+        sys.stdout.write("closeList: ")
         printList(closeList)
         if cell not in openList and cell not in closeList:
             print("Entered If Statement")
+            cell.visited = True
             if cell.blocked:
                 closeList.append(cell)
-                privateCloseList.append(cell)
             else:
                 heapq.heappush(openList, cell)
-                heapq.heappush(privateOpenList, cell)
         else: 
-            pass
-    return
-    print("pOL: " + str(len(privateOpenList)))
+            if(cell in openList):
+                print("cell in openList")
+            else: 
+                print("cell in closeList")
+    
     while(curr != goal):
         neighbors = getNeighbors(curr, array)
         for cell in neighbors:
-            if(cell not in privateCloseList and cell not in privateOpenList):
-                print("ENTERED ONCE")
+            if(cell not in closeList and cell not in openList):
                 if(cell.blocked):
-                    privateCloseList.append(cell)
+                    closeList.append(cell)
                 else:
-                    heapq.heappush(privateOpenList, cell)
+                    heapq.heappush(openList, cell)
                     cell.g = curr.g + 1
                     cell.h = manDis(cell.x, cell.y, goal.x, goal.y)
                     f = cell.g + cell.h 
                     if(f < cell.f):
                         cell.f = f
                         cell.parent = curr
-        if(len(privateOpenList) != 0):
-            curr = heapq.heappop(privateOpenList)
+        if(len(openList) != 0):
+            curr = heapq.heappop(openList)
             print("Curr: " + '(' + str(curr.x) + ',' + str(curr.y) + ')') 
         else: 
             print("Path does not exist.")
@@ -139,6 +140,9 @@ def computePath(curr, goal, array, openList, closeList):
     listPath(goal,array)
 #End computePath
 
+
+def inList(somelist, element):
+    return element in somelist
 
 
 #List coordinates taken
