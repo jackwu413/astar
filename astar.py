@@ -14,14 +14,18 @@ class Node:
         self.f = float("inf")
         self.parent = None
         self.blocked = blocked
+        self.visited = False
 
     def __lt__(self, other): 
-        return self.f < other.f
+            return self.f < other.f
+    def __le__(self, other):
+        return self.f <= other.f
     def __gt__(self, other):
         return self.f > other.f 
+    def __ge__(self, other):
+        return self.f >= other.f
     def __eq__(self, other):
-        return (self.f == other.f) and (self.x == other.x) and (self.y == other.y) and (self.g == other.g) and (self.h == other.h) and (self.parent == other.parent) and (self.blocked == other.blocked)
-        
+        return (self.f == other.f) and (self.x == other.x) and (self.y == other.y) and (self.g == other.g) and (self.h == other.h) and (self.parent == other.parent) and (self.blocked == other.blocked) and (self.visited == other.visited)        
 
 def promptUser():
     #Prompt user for maze number 
@@ -114,6 +118,17 @@ def computePath(start, goal, array, closeList):
     curr.g = 0
     curr.h = manDis(curr.x, curr.y, goal.x, goal.y)
     curr.f = curr.g + curr.h
+    curr.visited = True
+    neighbors = getNeighbors(curr,array)
+    for cell in neighbors:
+        cell.visited = True
+        if(cell.blocked):
+            pcl.append(cell)
+            closeList.append(cell)
+        else: 
+            heapq.heappush(pol, cell)
+    pcl.append(curr)
+    closeList.append(curr)
 
     initialNeighbors = getNeighbors(curr, array)
     for cell in initialNeighbors:
@@ -124,23 +139,22 @@ def computePath(start, goal, array, closeList):
             
     print("Goal: (" +str(goal.x) +","+str(goal.y)+")")
     while(curr != goal):
-        #print("Current: (" +str(curr.x) +","+str(curr.y)+")")
+        print("Current: (" +str(curr.x) +","+str(curr.y)+")")
         neighbors=getNeighbors(curr, pArray)
         for item in neighbors:
             #print("in neighbors for")
-            #print("\tlooking at neighbor: "+ "(" +str(item.x) +","+str(item.y)+")")
-            if (item not in pol and item not in pcl): #item not in pol and
-                #print("\tputting into heap")
+            print("\tlooking at neighbor: "+ "(" +str(item.x) +","+str(item.y)+")")
+            if (not item.visited): #item not in pol and
+                item.visited = True
+                print("\tputting into heap")
                 heapq.heappush(pol, item)
                 heapq.heapify(pol)
                 item.g = item.g + 1
                 item.h = manDis(item.x, item.y, goal.x, goal.y)
-                f = item.g + item.h 
-                item.f = f
+                item.f = item.g + item.h 
                 item.parent = curr
             else:
-                pass
-                #print("\t.cell "+ "(" +str(item.x) +","+str(item.y)+") already visited")
+                print("\tCell "+ "(" +str(item.x) +","+str(item.y)+") already visited")
         #End for
         pcl.append(curr)
 
