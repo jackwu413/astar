@@ -115,6 +115,13 @@ def computePath(start, goal, array, closeList):
     curr.h = manDis(curr.x, curr.y, goal.x, goal.y)
     curr.f = curr.g + curr.h
 
+    initialNeighbors = getNeighbors(curr, array)
+    for cell in initialNeighbors:
+        print("Neighbor: " + '(' + str(cell.x) + ',' + str(cell.y) + ') ' + str(cell.blocked))
+        if cell.blocked:
+            closeList.append(cell)
+            pcl.append(cell)
+            
     print("Goal: (" +str(goal.x) +","+str(goal.y)+")")
     while(curr != goal):
         #print("Current: (" +str(curr.x) +","+str(curr.y)+")")
