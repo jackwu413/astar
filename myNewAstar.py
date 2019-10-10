@@ -6,7 +6,7 @@ from heapq import heappush
 from os import listdir
 
 class Node:
-    def __init__(self, x, y, blocked):
+    def __init__(self, x, y, blocked, start):
         self.x = x
         self.y = y
         self.g = 99999
@@ -16,6 +16,7 @@ class Node:
         self.blocked = blocked
         self.visited = False
         self.onPath =  False
+        self.isStart = start
 
 
     def __lt__(self, other): 
@@ -27,7 +28,7 @@ class Node:
     def __ge__(self, other):
         return self.f >= other.f
     def __eq__(self, other):
-        return (self.f == other.f) and (self.x == other.x) and (self.y == other.y) and (self.g == other.g) and (self.h == other.h) and (self.parent == other.parent) and (self.blocked == other.blocked) and (self.visited == other.visited)      
+        return (self.f == other.f) and (self.x == other.x) and (self.y == other.y) and (self.g == other.g) and (self.h == other.h) and (self.parent == other.parent) and (self.blocked == other.blocked) and (self.visited == other.visited) and (self.isStart == other.isStart)      
 
 def promptUser():
     #Prompt user for maze number 
@@ -47,33 +48,80 @@ def promptUser():
             break
 
     #Parse maze number to get txt file and convert to 2D array
-    array = loadMaze(mazeNum)
-    execute(array,algo)
+    realArray, agentArray = loadMazes(mazeNum)
+    execute(agentArray, realArray, algo)
 
 #Take in maze number and return 2D array
-def loadMaze(mazeNum):
-    array = []
+def loadMazes(mazeNum):
+    realArray = []
+    agentArray = []
     for f in listdir("mazes"):
         if f == "maze" + str(mazeNum) + ".txt":
             file = open(os.getcwd() + "/mazes/" + f)
-            
             temp = file.read().splitlines()
             i = 0
             for item in temp:
-                subArray = []
+                realSubArray = []
+                agentSubArray = []
                 j = 0 
                 for index in item:
                     if index == 'X':
-                        subArray.append(Node(i,j,True))
+                        realSubArray.append(Node(i,j,True, False))
+                        agentSubArray.append(Node(i,j,False, False))
+                    elif index == 'S':
+                        realSubArray.append(Node(i,j,False, True))
+                        agentSubArray.append(Node(i, j, False, True))
                     else:
-                        subArray.append(Node(i,j,False))
+                        realSubArray.append(Node(i,j,False, False))
+                        agentSubArray.append(Node(i,j,False, False))
                     j += 1
-                array.append(subArray)
+                realArray.append(realSubArray)
+                agentArray.append(agentSubArray)
                 i += 1
-    return array
+    return realArray, agentArray
+
+def aStar(start, goal, agentArray, realArray):
+    openList = []
+    closeList = []
+    curr = start
+    curr.g = 0
+    curr.h = manDis(curr.x, curr.y, goal.x, goal.y)
 
 
-def execute(array, algo):
+    #Discover and record any immediate blocked neighbors
+    immediateNeighbors = getNeighbors(curr, agentArray)
+    for cell in immediateNeighbors:
+        if(realArray[cell.x][cell.y].blocked):
+            cell.blocked = True
+            closeList.append(cell)
+
+
+    while(curr != goal):
+        print("Curr is: " + '(' + str(curr.x) + ',' + str(curr.y) + ')')
+        neighbors = getNeighbors(curr, agentArray)
+        for cell in neighbors:
+            print("\tChecking neighbor: " + '(' + str(cell.x) + ',' + str(cell.y) + ')')
+            if cell not in openList and cell not in closeList: 
+                if cell.blocked:
+                    closeList.append(cell)
+                else: 
+                    heapq.heappush(openList, cell)
+                    cell.g = curr.g + 1
+                    cell.h = manDis(cell.x, cell.y, goal.x, goal.y)
+                    cell.f = cell.g + cell.h
+                    cell.parent = curr 
+        closeList.append(curr)
+        curr = heapq.heappop(openList)
+    #Print the path 
+    print("********GOAL********")
+    while(goal != start and goal != None):
+        print('(' + str(goal.x) + ',' + str(goal.y) + ')')
+        goal = goal.parent
+    print("********START********")
+
+
+
+def execute(agentArray, array, algo):
     if algo == 'f':
         print("Executing Repeated Forward A*")
 
@@ -82,6 +130,8 @@ def execute(array, algo):
 
         goal = array[len(array)-1][len(array[0])-1]
         curr = array[4][2]
+        aStar(curr,goal,agentArray, array)
+        return
         i = 0
         while(curr != goal):
             i += 1
