@@ -85,7 +85,9 @@ def execute(array, algo):
         i = 0
         while(curr != goal):
             i += 1
+            print("sending into compute path: "+ '(' + str(curr.x) + ',' + str(curr.y) + ')')
             curr = computePath(curr, goal, array, openList, closeList)
+            print("sending into compute path: "+ '(' + str(curr.x) + ',' + str(curr.y) + ')')
             curr = computePath(curr, goal, array, openList, closeList)
             
             return
@@ -151,10 +153,11 @@ def computePath(start, goal, array, openList, gCL):
                 printList(openList)
                 print("gCL: ")
                 printList(gCL)
-                return
+                #return
             #return 
         else: 
             print("Path does not exist.")
+            return goal
             break
             #return array[goal.x][goal.y]
         #End if else 
@@ -177,7 +180,7 @@ def computePath(start, goal, array, openList, gCL):
 #Get the new starting point for computePath
 def getNewStart(start, goal, array):
     result = goal
-    while(goal != None and goal != start):
+    while(goal != None or goal != start):
         if(goal.blocked):
             result = goal.parent
         goal = goal.parent
