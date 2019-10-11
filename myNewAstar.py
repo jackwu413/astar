@@ -82,25 +82,36 @@ def execute(agentArray, realArray, algo):
     if algo == 'f':
         print("Executing Repeated Forward A*")
         goal = realArray[len(realArray)-1][len(realArray[0])-1]
-        curr = realArray[4][2]
+        curr = realArray[0][0]
         while(curr != goal):
             print("New Start is: " + '(' + str(curr.x) + ',' + str(curr.y) + ')')
-            #Return a path from 
-            path = aStar(curr,goal,agentArray, realArray)
+            #Return a path from curr to goal
+            path = aStar(curr,goal,agentArray, realArray, algo)
             if(len(path) == 0):
                 print("No path found")
                 return 
             else:
-                curr = followPath(path,realArray,True)
-
+                curr = followPath(path,realArray)
         return
     elif algo == 'b':
         print("Executing Repeated Backward A*")
+        goal = realArray[len(realArray)-1][len(realArray[0])-1]
+        curr = realArray[0][0]
+        while(curr != goal):
+            print("New Start is: " + '(' + str(curr.x) + ',' + str(curr.y) + ')')
+            #Return a path from curr to goal
+            path = aStar(goal,curr,agentArray, realArray, algo)
+            if(len(path) == 0):
+                print("No path found")
+                return 
+            else:
+                curr = followBackwardPath(path,realArray)
+        return
     else: 
         print("Executing Adaptive A*")
 
 
-def aStar(tempStart, tempGoal, agentArray, realArray):
+def aStar(tempStart, tempGoal, agentArray, realArray, algo):
     openList = []
     closeList = []
     start = agentArray[tempStart.x][tempStart.y]
@@ -109,13 +120,20 @@ def aStar(tempStart, tempGoal, agentArray, realArray):
     curr.g = 0
     curr.h = manDis(curr.x, curr.y, goal.x, goal.y)
 
-    #Discover and record any immediate blocked neighbors
-    immediateNeighbors = getNeighbors(curr, agentArray)
-    for cell in immediateNeighbors:
-        if(realArray[cell.x][cell.y].blocked):
-            cell.blocked = True
-            closeList.append(cell)
-
+    #Discover and record any immediate blocked neighbors going forward 
+    if(algo == 'f'):
+        immediateNeighbors = getNeighbors(curr, agentArray)
+        for cell in immediateNeighbors:
+            if(realArray[cell.x][cell.y].blocked):
+                cell.blocked = True
+                closeList.append(cell)
+    else:
+    #Discover anbd record any immediate neighbors going backward
+        immediateNeighbors = getNeighbors(goal, agentArray)
+        for cell in immediateNeighbors:
+            if(realArray[cell.x][cell.y].blocked):
+                cell.blocked = True
+                closeList.append(cell)
 
     while(curr != goal):
         neighbors = getNeighbors(curr, agentArray)
@@ -140,26 +158,56 @@ def aStar(tempStart, tempGoal, agentArray, realArray):
     path=[]
     ptr2=goal
     while (ptr2 != start):
-        path.insert(0, ptr2)
+        path.insert(0,ptr2)
         ptr2 = ptr2.parent
     #adding start to the path
     path.insert(0,ptr2)
+    #printList(path)
     return path
 
 
-def followPath(path, realArray, new):
+def followPath(path, realArray):
     i=0
+    #This list needs to be traversed backwards in backwards
     for item in path:
         if (realArray[item.x][item.y].blocked):
+            printMaze(0,0,realArray,[],realArray[item.x][item.y])
             return realArray[item.parent.x][item.parent.y]
         else:
-            #print everything llike normal using print maze, but there is a currnt we also send in and that is the 
-            if(new and i==0):
-                i+=1
-                #do nothing
-            else:
-                printMaze(4,2,realArray,[],realArray[item.x][item.y])
+            realArray[item.x][item.y].onPath = True
+
+            # #Print everything like normal using print maze, but there is a current we also send in and that is the 
+            # if(i == 0):
+            #     i+=1
+            #     #Do nothing
+            # else:
+            #     realArray[item.x][item.y].onPath = True
+    printMaze(0,0,realArray,[],realArray[item.x][item.y])
     return realArray[item.x][item.y]
+
+
+def followBackwardPath(path, realArray):
+    i=0
+
+    ptr1 = path[0]
+    #This list needs to be traversed backwards in backwards
+    for item in reversed(path):
+        if (realArray[item.x][item.y].blocked):
+            printMaze(0,0,realArray,[],realArray[item.x][item.y])
+            return realArray[ptr1.x][ptr1.y]
+            #return realArray[item.parent.x][item.parent.y]
+        else:
+            realArray[item.x][item.y].onPath = True
+            #Print everything like normal using print maze, but there is a current we also send in and that is the 
+            if(i == 0):
+                i+=1
+                #Do nothing
+            else:
+                realArray[item.x][item.y].onPath = True
+        ptr1 = item
+    printMaze(0,0,realArray,[],realArray[item.x][item.y])
+    print("GOAL")
+    return realArray[len(realArray)-1][len(realArray[0])-1]
 
 
 #Get the new starting point for computePath
@@ -172,16 +220,6 @@ def getNewStart(start, goal, array):
     print('New start: (' + str(result.x) + ',' + str(result.y) + ')')
     return result.x, result.y
 
-#List coordinates taken
-def listPath(holder ,goal, array):
-    
-    print("***GOAL***")
-    while(goal.parent != holder and goal.parent != None):
-        print('(' + str(goal.x) + ',' + str(goal.y) + ')')
-        goal = goal.parent
-        goal.onPath = True
-    print('(' + str(goal.x) + ',' + str(goal.y) + ')')
-    print("***START***\n")
 
 #Print the values in a given list
 def printList(nodelist):
@@ -197,13 +235,10 @@ def printMaze(startx, starty,array,closeList, curr):
                 sys.stdout.write('S')
             elif(item.x == len(array)-1 and item.y == len(array[0])-1):
                 sys.stdout.write('E')
-            elif(item.onPath):
-                sys.stdout.write('.')
-                item.onPath = False
             elif(item.blocked):
                 sys.stdout.write('X')
-            elif(item==curr):
-                sys.stdout.write('A')
+            elif(item.onPath):
+                sys.stdout.write('.')
             else:
                 sys.stdout.write(' ')
         sys.stdout.write('\n')

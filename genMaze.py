@@ -1,7 +1,7 @@
 import os
 import random 
 
-file = open(os.getcwd() + "/mazes/" + "maze4.txt", "w")
+file = open(os.getcwd() + "/mazes/" + "maze5.txt", "w")
 file.write('S')
 for i in range(100):
 	temp = random.randint(1,100)
