@@ -6,7 +6,7 @@ from heapq import heappush
 from os import listdir
 
 class Node:
-    def __init__(self, x, y, blocked, start):
+    def __init__(self, x, y, blocked):
         self.x = x
         self.y = y
         self.g = 99999
@@ -14,9 +14,7 @@ class Node:
         self.f = 99999
         self.parent = None
         self.blocked = blocked
-        self.visited = False
         self.onPath =  False
-        self.isStart = start
 
 
     def __lt__(self, other): 
@@ -28,7 +26,7 @@ class Node:
     def __ge__(self, other):
         return self.f >= other.f
     def __eq__(self, other):
-        return (self.f == other.f) and (self.x == other.x) and (self.y == other.y) and (self.g == other.g) and (self.h == other.h) and (self.parent == other.parent) and (self.blocked == other.blocked) and (self.visited == other.visited) and (self.isStart == other.isStart)      
+        return (self.f == other.f) and (self.x == other.x) and (self.y == other.y) and (self.g == other.g) and (self.h == other.h) and (self.parent == other.parent) and (self.blocked == other.blocked)    
 
 def promptUser():
     #Prompt user for maze number 
@@ -66,27 +64,50 @@ def loadMazes(mazeNum):
                 j = 0 
                 for index in item:
                     if index == 'X':
-                        realSubArray.append(Node(i,j,True, False))
-                        agentSubArray.append(Node(i,j,False, False))
+                        realSubArray.append(Node(i,j,True))
+                        agentSubArray.append(Node(i,j,False))
                     elif index == 'S':
-                        realSubArray.append(Node(i,j,False, True))
-                        agentSubArray.append(Node(i, j, False, True))
+                        realSubArray.append(Node(i,j,False))
+                        agentSubArray.append(Node(i, j, False))
                     else:
-                        realSubArray.append(Node(i,j,False, False))
-                        agentSubArray.append(Node(i,j,False, False))
+                        realSubArray.append(Node(i,j,False))
+                        agentSubArray.append(Node(i,j,False))
                     j += 1
                 realArray.append(realSubArray)
                 agentArray.append(agentSubArray)
                 i += 1
     return realArray, agentArray
 
-def aStar(start, goal, agentArray, realArray):
+def execute(agentArray, realArray, algo):
+    if algo == 'f':
+        print("Executing Repeated Forward A*")
+        goal = realArray[len(realArray)-1][len(realArray[0])-1]
+        curr = realArray[4][2]
+        while(curr != goal):
+            print("New Start is: " + '(' + str(curr.x) + ',' + str(curr.y) + ')')
+            #Return a path from 
+            path = aStar(curr,goal,agentArray, realArray)
+            if(len(path) == 0):
+                print("No path found")
+                return 
+            else:
+                curr = followPath(path,realArray,True)
+
+        return
+    elif algo == 'b':
+        print("Executing Repeated Backward A*")
+    else: 
+        print("Executing Adaptive A*")
+
+
+def aStar(tempStart, tempGoal, agentArray, realArray):
     openList = []
     closeList = []
-    curr = start
+    start = agentArray[tempStart.x][tempStart.y]
+    curr = agentArray[start.x][start.y]
+    goal = agentArray[tempGoal.x][tempGoal.y]
     curr.g = 0
     curr.h = manDis(curr.x, curr.y, goal.x, goal.y)
-
 
     #Discover and record any immediate blocked neighbors
     immediateNeighbors = getNeighbors(curr, agentArray)
@@ -97,10 +118,8 @@ def aStar(start, goal, agentArray, realArray):
 
 
     while(curr != goal):
-        print("Curr is: " + '(' + str(curr.x) + ',' + str(curr.y) + ')')
         neighbors = getNeighbors(curr, agentArray)
         for cell in neighbors:
-            print("\tChecking neighbor: " + '(' + str(cell.x) + ',' + str(cell.y) + ')')
             if cell not in openList and cell not in closeList: 
                 if cell.blocked:
                     closeList.append(cell)
@@ -111,132 +130,36 @@ def aStar(start, goal, agentArray, realArray):
                     cell.f = cell.g + cell.h
                     cell.parent = curr 
         closeList.append(curr)
-        curr = heapq.heappop(openList)
-    #Print the path 
-    print("********GOAL********")
-    while(goal != start and goal != None):
-        print('(' + str(goal.x) + ',' + str(goal.y) + ')')
-        goal = goal.parent
-    print("********START********")
-
-
-
-def execute(agentArray, array, algo):
-    if algo == 'f':
-        print("Executing Repeated Forward A*")
-
-        openList = []
-        closeList = []
-
-        goal = array[len(array)-1][len(array[0])-1]
-        curr = array[4][2]
-        aStar(curr,goal,agentArray, array)
-        return
-        i = 0
-        while(curr != goal):
-            i += 1
-            curr = computePath(curr, goal, array, openList, closeList)
-            print("gCL size: " + str(len(closeList)))
-            if(i == 2):
-                return
-            #return
-            # closeList.append(curr)
-            # curr = heapq.heappop(openList)
-            #printMaze(curr,array)
-        #End while
-    #End if
-    elif algo == 'b':
-        print("Executing Repeated Backward A*")
-    else: 
-        print("Executing Adaptive A*")
-
-#Function that takes in "starting" point and computes best path to goal without regard for blocked cells 
-def computePath(start, goal, array, openList, closeList):
-    print("Start: " + '(' + str(start.x) + ',' + str(start.y) + ')')
-
-    startx = start.x
-    starty = start.y
-    privateCloseList = list(closeList)
-
-    print("privateCloseList: ")
-    printList(privateCloseList)
-    print("openList: ")
-    printList(openList)
-    print("closeList: ")
-    printList(closeList)
-
-    curr = start
-    curr.g = 0
-    curr.h = manDis(curr.x, curr.y, goal.x, goal.y)
-    curr.f = curr.g + curr.h
-    #Mark initial neighbors as visited 
-    initialNeighbors = getNeighbors(curr, array)
-    for cell in initialNeighbors:
-        print("Neighbor: " + '(' + str(cell.x) + ',' + str(cell.y) + ') ')
-        if cell not in closeList: #and cell not in openList
-            cell.visited = True
-            if cell.blocked:
-                print("Cell: " + '(' + str(cell.x) + ',' + str(cell.y) + ')')
-                print("\tCell added to privateCloseList and closeList")
-                if(cell.x == 2 and cell.y == 1):
-                    print("Problem Curr: " + '(' + str(curr.x) + ',' + str(curr.y) + ') ')
-
-                closeList.append(cell)
-                privateCloseList.append(cell)
-            else:
-                print("\tCell added to openList")
-                heapq.heappush(openList, cell)
-    closeList.append(curr)
-    while(curr != goal):
-        curr.visited = True
-        print("Curr: " + '(' + str(cell.x) + ',' + str(cell.y) + ')')
-        print("\tCell added to privateCloseList")
-        privateCloseList.append(curr)
-        neighbors = getNeighbors(curr, array)
-        for cell in neighbors:
-            if not cell.visited:
-                cell.visited = True
-                cell.g = curr.g + 1
-                cell.h = manDis(cell.x, cell.y, goal.x, goal.y)
-                cell.f = cell.g + cell.h
-                cell.parent = curr
-                print("Cell: " + '(' + str(cell.x) + ',' + str(cell.y) + ')')
-                print("\tCell added to openList")
-                heapq.heappush(openList, cell)
-        if(len(openList) != 0):
-            temp = curr
+        if(len(openList) >= 1):
             curr = heapq.heappop(openList)
-            if(curr == goal):
-                curr.parent = temp
-                break
-        else: 
-            print("Path does not exist.")
-            break
-        #End if else 
-    #End while
+        else:
+            noPath = []
+            return noPath
+
+    #Return the path from start to tempGoal
+    path=[]
+    ptr2=goal
+    while (ptr2 != start):
+        path.insert(0, ptr2)
+        ptr2 = ptr2.parent
+    #adding start to the path
+    path.insert(0,ptr2)
+    return path
 
 
-    newX, newY = getNewStart(start, goal, array)
-
-    listPath(start,goal,array)
-
-    appendCloseList(start, newX, newY, array, closeList)
-
-    #Print the path computed from this iteration
-    printMaze(startx, starty,array, closeList)
-
-    # print("privateCloseList: ")
-    # printList(privateCloseList)
-    # print("openList: ")
-    # printList(openList)
-    # print("closeList: ")
-    # printList(closeList)
-    # print("New curr: (" + str(newX) + ',' + str(newY) + ')')
-    #Return new curr (the parent of the last blocked cell going backwards from the goal)
-
-    return array[newX][newY]
-
-#End computePath
+def followPath(path, realArray, new):
+    i=0
+    for item in path:
+        if (realArray[item.x][item.y].blocked):
+            return realArray[item.parent.x][item.parent.y]
+        else:
+            #print everything llike normal using print maze, but there is a currnt we also send in and that is the 
+            if(new and i==0):
+                i+=1
+                #do nothing
+            else:
+                printMaze(4,2,realArray,[],realArray[item.x][item.y])
+    return realArray[item.x][item.y]
 
 
 #Get the new starting point for computePath
@@ -249,14 +172,6 @@ def getNewStart(start, goal, array):
     print('New start: (' + str(result.x) + ',' + str(result.y) + ')')
     return result.x, result.y
 
-def appendCloseList(start, newX, newY, array, closeList):
-    temp = array[newX][newY]
-    while(temp != start and temp != None):
-        closeList.append(temp)
-        temp = temp.parent
-
-
-
 #List coordinates taken
 def listPath(holder ,goal, array):
     
@@ -268,16 +183,13 @@ def listPath(holder ,goal, array):
     print('(' + str(goal.x) + ',' + str(goal.y) + ')')
     print("***START***\n")
 
-
-
+#Print the values in a given list
 def printList(nodelist):
     for item in nodelist:
         print('(' + str(item.x) + ',' + str(item.y) +')' + "f-value: " + str(item.f))
 
-
-
 #Print maze with path
-def printMaze(startx, starty,array,closeList):
+def printMaze(startx, starty,array,closeList, curr):
     print("Maze:" + '\n' + "----------")
     for line in array:
         for item in line:
@@ -288,8 +200,10 @@ def printMaze(startx, starty,array,closeList):
             elif(item.onPath):
                 sys.stdout.write('.')
                 item.onPath = False
-            elif(item.blocked and item in closeList):
+            elif(item.blocked):
                 sys.stdout.write('X')
+            elif(item==curr):
+                sys.stdout.write('A')
             else:
                 sys.stdout.write(' ')
         sys.stdout.write('\n')
@@ -298,8 +212,6 @@ def printMaze(startx, starty,array,closeList):
 #Compute Manhattan Distance between 2 nodes
 def manDis(x1,y1,x2,y2):
     return(abs(x2-x1)+abs(y2-y1)) 
-
-
 
 #Get the neighbors of a node and return them in an array 
 def getNeighbors(curr, array):
