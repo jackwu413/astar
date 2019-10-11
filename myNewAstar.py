@@ -96,22 +96,24 @@ def aStar(start, goal, agentArray, realArray):
             closeList.append(cell)
 
 
-    while(curr != goal):
+    while(curr.x != goal.x and curr.y != goal.y):
         print("Curr is: " + '(' + str(curr.x) + ',' + str(curr.y) + ')')
         neighbors = getNeighbors(curr, agentArray)
         for cell in neighbors:
             print("\tChecking neighbor: " + '(' + str(cell.x) + ',' + str(cell.y) + ')')
-            if cell not in openList and cell not in closeList: 
+            if cell not in closeList and cell not in openList: 
                 if cell.blocked:
                     closeList.append(cell)
                 else: 
-                    heapq.heappush(openList, cell)
-                    cell.g = curr.g + 1
-                    cell.h = manDis(cell.x, cell.y, goal.x, goal.y)
-                    cell.f = cell.g + cell.h
-                    cell.parent = curr 
+                    if(curr.g + 1 < cell.g):
+                        cell.g = curr.g + 1
+                        cell.h = manDis(cell.x, cell.y, goal.x, goal.y)
+                        cell.f = cell.g + cell.h
+                        cell.parent = curr 
+                        heapq.heappush(openList, cell)
         closeList.append(curr)
         curr = heapq.heappop(openList)
+    #End while
     #Print the path 
     print("********GOAL********")
     while(goal != start and goal != None):
