@@ -16,6 +16,9 @@ class Node:
         self.blocked = blocked
         self.onPath =  False
 
+    # def __cmp__(self, other):
+    #     return cmp(self.f, other.f)
+
 
     def __lt__(self, other): 
         return self.f < other.f
@@ -26,7 +29,7 @@ class Node:
     def __ge__(self, other):
         return self.f >= other.f
     def __eq__(self, other):
-        return (self.f == other.f) and (self.x == other.x) and (self.y == other.y) and (self.g == other.g) and (self.h == other.h) and (self.parent == other.parent) and (self.blocked == other.blocked)    
+        return (self.f == other.f) and (self.x == other.x) and (self.y == other.y) and (self.g == other.g) and (self.h == other.h) and (self.parent == other.parent) and (self.blocked == other.blocked) and (self.onPath == other.onPath)    
 
 def promptUser():
     #Prompt user for maze number 
@@ -87,6 +90,7 @@ def execute(agentArray, realArray, algo):
             print("New Start is: " + '(' + str(curr.x) + ',' + str(curr.y) + ')')
             #Return a path from curr to goal
             path = aStar(curr,goal,agentArray, realArray, algo)
+
             if(len(path) == 0):
                 print("No path found")
                 return 
@@ -101,6 +105,7 @@ def execute(agentArray, realArray, algo):
             print("New Start is: " + '(' + str(curr.x) + ',' + str(curr.y) + ')')
             #Return a path from curr to goal
             path = aStar(goal,curr,agentArray, realArray, algo)
+
             if(len(path) == 0):
                 print("No path found")
                 return 
@@ -109,14 +114,111 @@ def execute(agentArray, realArray, algo):
         return
     else: 
         print("Executing Adaptive A*")
+        goal = realArray[len(realArray)-1][len(realArray[0])-1]
+        curr = realArray[0][0]
+        prevCloseList = []
+        i = 0
+        while(curr != goal):
+            print("New Start is: " + '(' + str(curr.x) + ',' + str(curr.y) + ')')
+            #Return a path from curr to goal
+            path, prevCloseList = adaptiveAStar(curr,goal,agentArray, realArray, prevCloseList,i)
+            print("prevCloseList size: " + str(len(prevCloseList)))
+            return
+            i += 1
+            if(len(path) == 0):
+                print("No path found")
+                return 
+            else:
+                curr = followPath(path,realArray)
+        return
+
+
+def adaptiveAStar(tempStart, tempGoal, agentArray, realArray, prevCloseList, i):
+    openList = []
+    closeList = []
+    #Hold onto this starting node so we can traverse the path later 
+    start = agentArray[tempStart.x][tempStart.y]
+    #Curr is used to actually perform the A Star search 
+    curr = agentArray[tempStart.x][tempStart.y]
+    #Goal is the goal node in the agent's world
+    goal = agentArray[tempGoal.x][tempGoal.y]
+
+    curr.g = 0
+    if(i == 0 or cell not in prevCloseList):
+        curr.h = manDis(curr.x, curr.y, goal.x, goal.y)
+    else:
+        curr.h = prevCloseList[prevCloseList.index(goal)].g - prevCloseList[prevCloseList.index(curr)].g
+    curr.f = curr.g + curr.h         
+
+    immediateNeighbors = getNeighbors(curr, agentArray)
+    
+    for cell in immediateNeighbors:
+        if(realArray[cell.x][cell.y].blocked):
+            cell.blocked = True
+            closeList.append(cell)
+
+    while(curr != goal):
+        print("Curr: " + '(' + str(curr.x) + ',' + str(curr.y) + ')')
+        neighbors = getNeighbors(curr, agentArray)
+
+        for cell in neighbors:
+            print("\tChecking neighbor: " + str(cell.x) + ',' + str(cell.y))
+            if cell not in openList and cell not in closeList:
+                if cell.blocked:
+                    closeList.append(cell)
+                else: 
+                    heapq.heappush(openList, cell)
+                    print("\tPushing " + str(cell.x) + ',' + str(cell.y) + " onto heap")
+                    #Update g, h, f values 
+                    cell.g = curr.g + 1
+                    if(i == 0 or cell not in prevCloseList):
+                        cell.h = manDis(cell.x, cell.y, goal.x, goal.y)
+                    else:
+                        cell.h = prevCloseList[prevCloseList.index(goal)].g - prevCloseList[prevCloseList.index(cell)].g
+                    cell.f = cell.g + cell.h
+                    cell.parent = curr
+            elif(cell in openList):
+                #Update g, h, f values 
+                    if(curr.g + 1 < cell.g):
+                        cell.g = curr.g + 1
+                        if(i == 0 or cell not in prevCloseList):
+                            cell.h = manDis(cell.x, cell.y, goal.x, goal.y)
+                        else:
+                            cell.h = prevCloseList[prevCloseList.index(goal)].g - prevCloseList[prevCloseList.index(cell)].g
+                        cell.f = cell.g + cell.h
+                        cell.parent = curr
+        closeList.append(curr)
+        if(len(openList) >= 1):
+            curr = heapq.heappop(openList)
+        else:
+            noPath = []
+            return noPath
+    expandedCells = len(closeList)
+    path=[]
+    ptr2=goal
+    while (ptr2 != start):
+        path.insert(0,ptr2)
+        ptr2 = ptr2.parent
+    #adding start to the path
+    path.insert(0,ptr2)
+    #printList(path)
+    return path, closeList
+
 
 
 def aStar(tempStart, tempGoal, agentArray, realArray, algo):
     openList = []
     closeList = []
+
+    #Hold onto this starting node so we can traverse the path later 
     start = agentArray[tempStart.x][tempStart.y]
+
+    #Curr is used to actually perform the A Star search 
     curr = agentArray[start.x][start.y]
+
+    #Goal is the goal node in the agent's world
     goal = agentArray[tempGoal.x][tempGoal.y]
+
     curr.g = 0
     curr.h = manDis(curr.x, curr.y, goal.x, goal.y)
 
@@ -128,7 +230,7 @@ def aStar(tempStart, tempGoal, agentArray, realArray, algo):
                 cell.blocked = True
                 closeList.append(cell)
     else:
-    #Discover anbd record any immediate neighbors going backward
+    #Discover and record any immediate neighbors going backward
         immediateNeighbors = getNeighbors(goal, agentArray)
         for cell in immediateNeighbors:
             if(realArray[cell.x][cell.y].blocked):
@@ -136,18 +238,24 @@ def aStar(tempStart, tempGoal, agentArray, realArray, algo):
                 closeList.append(cell)
 
     while(curr != goal):
+        print("Curr: " + '(' + str(curr.x) + ',' + str(curr.y) + ')')
         neighbors = getNeighbors(curr, agentArray)
         for cell in neighbors:
+            print("\tChecking neighbor: " + str(cell.x) + ',' + str(cell.y))
             if cell not in openList and cell not in closeList: 
                 if cell.blocked:
                     closeList.append(cell)
                 else: 
-                    if(curr.g + 1 < cell.g):
-                        cell.g = curr.g + 1
-                        cell.h = manDis(cell.x, cell.y, goal.x, goal.y)
-                        cell.f = cell.g + cell.h
-                        cell.parent = curr 
-                        heapq.heappush(openList, cell)
+                    heapq.heappush(openList, cell)
+                    cell.g = curr.g + 1
+                    cell.h = manDis(cell.x, cell.y, goal.x, goal.y)
+                    cell.f = cell.g + cell.h
+                    cell.parent = curr
+            elif(cell in openList):
+                if(curr.g + 1 < cell.g):
+                    cell.g = curr.g + 1 
+                    cell.f = cell.g + cell.h
+                    cell.parent = curr
         closeList.append(curr)
         if(len(openList) >= 1):
             curr = heapq.heappop(openList)
