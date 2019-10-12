@@ -3,6 +3,8 @@ import sys
 import math
 import heapq
 from heapq import heappush
+import myHeap
+from myHeap import Heap
 from os import listdir
 
 class Node:
@@ -16,20 +18,41 @@ class Node:
         self.blocked = blocked
         self.onPath =  False
 
+    def __lt__(self, other): 
+        if self.f==other.f:
+            return self.g>other.g
+        return self.f < other.f
+    def __le__(self, other):
+        if self.f==other.f:
+            return self.g>=other.g
+        return self.f <= other.f
+    def __gt__(self, other):
+        if self.f==other.f:
+            return self.g<other.g
+        return self.f > other.f 
+    def __ge__(self, other):
+        if self.f==other.f:
+            return self.g<=other.g
+        return self.f >= other.f
+    def __eq__(self, other):
+        if(other == 0):
+            return False
+        return (self.f == other.f) and (self.x == other.x) and (self.y == other.y) and (self.g == other.g) and (self.h == other.h) and (self.parent == other.parent) and (self.blocked == other.blocked) and (self.onPath == other.onPath)
+
     # def __cmp__(self, other):
     #     return cmp(self.f, other.f)
 
 
-    def __lt__(self, other): 
-        return self.f < other.f
-    def __le__(self, other):
-        return self.f <= other.f
-    def __gt__(self, other):
-        return self.f > other.f 
-    def __ge__(self, other):
-        return self.f >= other.f
-    def __eq__(self, other):
-        return (self.f == other.f) and (self.x == other.x) and (self.y == other.y) and (self.g == other.g) and (self.h == other.h) and (self.parent == other.parent) and (self.blocked == other.blocked) and (self.onPath == other.onPath)    
+    # def __lt__(self, other): 
+    #     return self.f < other.f
+    # def __le__(self, other):
+    #     return self.f <= other.f
+    # def __gt__(self, other):
+    #     return self.f > other.f 
+    # def __ge__(self, other):
+    #     return self.f >= other.f
+    # def __eq__(self, other):
+    #     return (self.f == other.f) and (self.x == other.x) and (self.y == other.y) and (self.g == other.g) and (self.h == other.h) and (self.parent == other.parent) and (self.blocked == other.blocked) and (self.onPath == other.onPath)    
 
 def promptUser():
     #Prompt user for maze number 
@@ -42,7 +65,7 @@ def promptUser():
 
     #Pompt user for algorithm
     while True: 
-        algo = raw_input('''Enter F for FORWARD, B for BACKWARD, or A for ADAPTIVE.\n''')
+        algo = raw_input("Enter F for FORWARD, B for BACKWARD, or A for ADAPTIVE.\n")
         if(algo != 'f' and algo != 'b' and algo != 'a'):
             print("Improper input. Try again.\n")
         else: 
@@ -86,55 +109,61 @@ def execute(agentArray, realArray, algo):
         print("Executing Repeated Forward A*")
         goal = realArray[len(realArray)-1][len(realArray[0])-1]
         curr = realArray[0][0]
+        expandedCells = 0
         while(curr != goal):
             print("New Start is: " + '(' + str(curr.x) + ',' + str(curr.y) + ')')
             #Return a path from curr to goal
-            path = aStar(curr,goal,agentArray, realArray, algo)
+            path, expandedCells = aStar(curr,goal,agentArray, realArray, algo, expandedCells)
 
             if(len(path) == 0):
                 print("No path found")
+                print("Expanded Cells: " + str(expandedCells))
                 return 
             else:
                 curr = followPath(path,realArray)
+        print("Expanded Cells: " + str(expandedCells))
         return
     elif algo == 'b':
         print("Executing Repeated Backward A*")
         goal = realArray[len(realArray)-1][len(realArray[0])-1]
         curr = realArray[0][0]
+        expandedCells = 0
         while(curr != goal):
             print("New Start is: " + '(' + str(curr.x) + ',' + str(curr.y) + ')')
             #Return a path from curr to goal
-            path = aStar(goal,curr,agentArray, realArray, algo)
+            path, expandedCells = aStar(goal,curr,agentArray, realArray, algo, expandedCells)
 
             if(len(path) == 0):
                 print("No path found")
                 return 
             else:
                 curr = followBackwardPath(path,realArray)
+        print("Expanded Cells: " + str(expandedCells))
         return
     else: 
         print("Executing Adaptive A*")
         goal = realArray[len(realArray)-1][len(realArray[0])-1]
         curr = realArray[0][0]
+        expandedCells = 0
         prevCloseList = []
         i = 0
         while(curr != goal):
             print("New Start is: " + '(' + str(curr.x) + ',' + str(curr.y) + ')')
             #Return a path from curr to goal
-            path, prevCloseList = adaptiveAStar(curr,goal,agentArray, realArray, prevCloseList,i)
-            print("prevCloseList size: " + str(len(prevCloseList)))
-            return
+            path, prevCloseList, expandedCells = adaptiveAStar(curr,goal,agentArray, realArray, prevCloseList,i, expandedCells)
             i += 1
             if(len(path) == 0):
                 print("No path found")
+                print("Expanded Cells: " + str(expandedCells))
                 return 
             else:
                 curr = followPath(path,realArray)
+        print("Expanded Cells: " + str(expandedCells))
         return
 
 
-def adaptiveAStar(tempStart, tempGoal, agentArray, realArray, prevCloseList, i):
-    openList = []
+def adaptiveAStar(tempStart, tempGoal, agentArray, realArray, prevCloseList, i, expandedCells):
+    openList = Heap()
     closeList = []
     #Hold onto this starting node so we can traverse the path later 
     start = agentArray[tempStart.x][tempStart.y]
@@ -144,56 +173,87 @@ def adaptiveAStar(tempStart, tempGoal, agentArray, realArray, prevCloseList, i):
     goal = agentArray[tempGoal.x][tempGoal.y]
 
     curr.g = 0
-    if(i == 0 or cell not in prevCloseList):
-        curr.h = manDis(curr.x, curr.y, goal.x, goal.y)
-    else:
-        curr.h = prevCloseList[prevCloseList.index(goal)].g - prevCloseList[prevCloseList.index(curr)].g
-    curr.f = curr.g + curr.h         
 
-    immediateNeighbors = getNeighbors(curr, agentArray)
-    
-    for cell in immediateNeighbors:
-        if(realArray[cell.x][cell.y].blocked):
-            cell.blocked = True
-            closeList.append(cell)
+    if(i==0):   
+        #Mark any immediate neighbors as blocked if they are blocked in the real Array 
+        immediateNeighbors = getNeighbors(curr, agentArray)
+        for cell in immediateNeighbors:
+            if(realArray[cell.x][cell.y].blocked):
+                cell.blocked = True
+                closeList.append(cell)
 
-    while(curr != goal):
-        print("Curr: " + '(' + str(curr.x) + ',' + str(curr.y) + ')')
-        neighbors = getNeighbors(curr, agentArray)
-
-        for cell in neighbors:
-            print("\tChecking neighbor: " + str(cell.x) + ',' + str(cell.y))
-            if cell not in openList and cell not in closeList:
-                if cell.blocked:
-                    closeList.append(cell)
-                else: 
-                    heapq.heappush(openList, cell)
-                    print("\tPushing " + str(cell.x) + ',' + str(cell.y) + " onto heap")
-                    #Update g, h, f values 
-                    cell.g = curr.g + 1
-                    if(i == 0 or cell not in prevCloseList):
+        while(curr != goal):
+            neighbors = getNeighbors(curr, agentArray)
+            for cell in neighbors:
+                if cell not in openList.heap and cell not in closeList:
+                    if cell.blocked:
+                        closeList.append(cell)
+                    else: 
+                        openList.push(cell)
+                        #Update g, h, and fa values 
+                        cell.g = curr.g + 1
                         cell.h = manDis(cell.x, cell.y, goal.x, goal.y)
-                    else:
-                        cell.h = prevCloseList[prevCloseList.index(goal)].g - prevCloseList[prevCloseList.index(cell)].g
-                    cell.f = cell.g + cell.h
-                    cell.parent = curr
-            elif(cell in openList):
-                #Update g, h, f values 
+                        cell.f = cell.g + cell.h 
+                        #Set parent to curr
+                        cell.parent = curr
+                elif(cell in openList.heap):
+                    #Update g, h, f values 
                     if(curr.g + 1 < cell.g):
                         cell.g = curr.g + 1
-                        if(i == 0 or cell not in prevCloseList):
+                        cell.h = manDis(cell.x, cell.y, goal.x, goal.y)
+                        cell.f = cell.g + cell.h
+                        #Set new parent because we found a better path to this cell 
+                        cell.parent = curr
+            #Done expanding curr
+            closeList.append(curr)
+            expandedCells += 1
+            if(len(openList.heap) >= 2):
+                curr = openList.heappop()
+            else:
+                noPath = []
+                return noPath
+    else:
+        immediateNeighbors = getNeighbors(curr, agentArray)
+        for cell in immediateNeighbors:
+            if(realArray[cell.x][cell.y].blocked):
+                cell.blocked = True
+                closeList.append(cell)
+
+        while(curr != goal):
+            neighbors = getNeighbors(curr, agentArray)
+            for cell in neighbors:
+                if cell not in openList.heap and cell not in closeList:
+                    if cell.blocked:
+                        closeList.append(cell)
+                    else: 
+                        openList.push(cell)
+                        if(cell not in prevCloseList):
+                            cell.h = manDis(cell.x, cell.y, goal.x, goal.y)
+                        else:
+                            #Possible error
+                            cell.h = prevCloseList[prevCloseList.index(goal)].g - prevCloseList[prevCloseList.index(cell)].g
+                        cell.g = curr.g + 1
+                        cell.f = cell.g + cell.h
+                        cell.parent = curr
+                elif(cell in openList.heap):
+                    if(curr.g + 1 < cell.g):
+                        if(cell not in prevCloseList):
                             cell.h = manDis(cell.x, cell.y, goal.x, goal.y)
                         else:
                             cell.h = prevCloseList[prevCloseList.index(goal)].g - prevCloseList[prevCloseList.index(cell)].g
+                        cell.g = curr.g + 1
                         cell.f = cell.g + cell.h
                         cell.parent = curr
-        closeList.append(curr)
-        if(len(openList) >= 1):
-            curr = heapq.heappop(openList)
-        else:
-            noPath = []
-            return noPath
-    expandedCells = len(closeList)
+            closeList.append(curr)
+            expandedCells += 1
+            if(len(openList.heap) >= 2):
+                curr = openList.heappop()
+            else:
+                noPath = []
+                return noPath,closeList,expandedCells
+
+    goal.g=curr.g
+    closeList.append(goal)
     path=[]
     ptr2=goal
     while (ptr2 != start):
@@ -202,12 +262,12 @@ def adaptiveAStar(tempStart, tempGoal, agentArray, realArray, prevCloseList, i):
     #adding start to the path
     path.insert(0,ptr2)
     #printList(path)
-    return path, closeList
+    return path, closeList, expandedCells
 
 
 
-def aStar(tempStart, tempGoal, agentArray, realArray, algo):
-    openList = []
+def aStar(tempStart, tempGoal, agentArray, realArray, algo, expandedCells):
+    openList = Heap()
     closeList = []
 
     #Hold onto this starting node so we can traverse the path later 
@@ -238,30 +298,30 @@ def aStar(tempStart, tempGoal, agentArray, realArray, algo):
                 closeList.append(cell)
 
     while(curr != goal):
-        print("Curr: " + '(' + str(curr.x) + ',' + str(curr.y) + ')')
+        
         neighbors = getNeighbors(curr, agentArray)
         for cell in neighbors:
-            print("\tChecking neighbor: " + str(cell.x) + ',' + str(cell.y))
-            if cell not in openList and cell not in closeList: 
+            if cell not in openList.heap and cell not in closeList: 
                 if cell.blocked:
                     closeList.append(cell)
                 else: 
-                    heapq.heappush(openList, cell)
+                    openList.push(cell)
                     cell.g = curr.g + 1
                     cell.h = manDis(cell.x, cell.y, goal.x, goal.y)
                     cell.f = cell.g + cell.h
                     cell.parent = curr
-            elif(cell in openList):
+            elif(cell in openList.heap):
                 if(curr.g + 1 < cell.g):
                     cell.g = curr.g + 1 
                     cell.f = cell.g + cell.h
                     cell.parent = curr
         closeList.append(curr)
-        if(len(openList) >= 1):
-            curr = heapq.heappop(openList)
+        expandedCells += 1
+        if(len(openList.heap) >= 2):
+            curr = openList.heappop()
         else:
             noPath = []
-            return noPath
+            return noPath, expandedCells
 
     #Return the path from start to tempGoal
     path=[]
@@ -272,7 +332,7 @@ def aStar(tempStart, tempGoal, agentArray, realArray, algo):
     #adding start to the path
     path.insert(0,ptr2)
     #printList(path)
-    return path
+    return path, expandedCells
 
 
 def followPath(path, realArray):
