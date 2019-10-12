@@ -135,6 +135,7 @@ def execute(agentArray, realArray, algo):
 
             if(len(path) == 0):
                 print("No path found")
+                print("Expanded Cells: " + str(expandedCells))
                 return 
             else:
                 curr = followBackwardPath(path,realArray)

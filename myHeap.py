@@ -14,6 +14,13 @@ class Heap:
 				holder = self.heap[i/2]
 				self.heap[i/2] = self.heap[i]
 				self.heap[i] = holder 
+			elif self.heap[i].f == self.heap[i/2].f:
+				if self.heap[i].g < self.heap[i/2].g:
+					break
+				else: 
+					holder = self.heap[i/2]
+					self.heap[i/2] = self.heap[i]
+					self.heap[i] = holder 
 			i = i / 2
 
 	def heappop(self):
@@ -31,6 +38,13 @@ class Heap:
 				holder = self.heap[i]
 				self.heap[i] = self.heap[minChild]
 				self.heap[minChild] = holder
+			elif(self.heap[i].f == self.heap[minChild].f):
+				if self.heap[i].g < self.heap[minChild].g:
+					holder = self.heap[i]
+					self.heap[i] = self.heap[minChild]
+					self.heap[minChild] = holder
+				else:
+					break
 			i = minChild
 
 	def minChild(self, i):
